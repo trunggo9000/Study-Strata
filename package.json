@@ -1,0 +1,22 @@
+{
+  "name": "study-strata",
+  "version": "1.0.0",
+  "description": "Study Strata - Academic Planning Platform",
+  "private": true,
+  "workspaces": [
+    "frontend"
+  ],
+  "scripts": {
+    "dev": "cd frontend && npm run dev",
+    "build": "cd frontend && npm run build",
+    "build:dev": "cd frontend && npm run build:dev",
+    "lint": "cd frontend && npm run lint",
+    "preview": "cd frontend && npm run preview",
+    "install:frontend": "cd frontend && npm install",
+    "install:all": "npm run install:frontend"
+  },
+  "devDependencies": {},
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
