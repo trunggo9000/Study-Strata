@@ -7,15 +7,19 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { GraduationCap, Target, Clock, Brain } from "lucide-react";
+import { GraduationCap, Target, Clock, Brain, BookOpen, Award, Plus, Trash2 } from "lucide-react";
+import { uclaMajors, searchMajors } from "@/data/uclaMajors";
+import CourseSelector from "./CourseSelector";
+import { apCourseConversions, getAPConversions, getRecommendedFirstCourses } from "@/data/apCourseConversions";
 
 interface FormData {
   major: string;
   year: string;
   graduationTimeline: string;
-  workloadPreference: string;
   focusArea: string;
   constraints: string[];
+  completedCourses: string[];
+  apScores: { course: string; score: number }[];
 }
 
 interface MultiStepFormProps {
@@ -39,12 +43,13 @@ const MultiStepForm = ({ onComplete }: MultiStepFormProps) => {
     major: "",
     year: "",
     graduationTimeline: "",
-    workloadPreference: "",
     focusArea: "",
-    constraints: []
+    constraints: [],
+    completedCourses: [],
+    apScores: []
   });
 
-  const totalSteps = 4;
+  const totalSteps = 5;
   const progress = (currentStep / totalSteps) * 100;
 
   const handleNext = () => {
@@ -61,8 +66,31 @@ const MultiStepForm = ({ onComplete }: MultiStepFormProps) => {
     }
   };
 
-  const updateFormData = (key: keyof FormData, value: string | string[]) => {
+  const updateFormData = (key: keyof FormData, value: string | string[] | { course: string; score: number }[]) => {
     setFormData(prev => ({ ...prev, [key]: value }));
+  };
+
+  const addAPScore = () => {
+    setFormData(prev => ({
+      ...prev,
+      apScores: [...prev.apScores, { course: "", score: 3 }]
+    }));
+  };
+
+  const removeAPScore = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      apScores: prev.apScores.filter((_, i) => i !== index)
+    }));
+  };
+
+  const updateAPScore = (index: number, field: 'course' | 'score', value: string | number) => {
+    setFormData(prev => ({
+      ...prev,
+      apScores: prev.apScores.map((ap, i) => 
+        i === index ? { ...ap, [field]: value } : ap
+      )
+    }));
   };
 
   const renderStep = () => {
@@ -127,9 +155,9 @@ const MultiStepForm = ({ onComplete }: MultiStepFormProps) => {
                     <SelectValue placeholder="When do you plan to graduate?" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="3-years">3 Years (Accelerated)</SelectItem>
-                    <SelectItem value="4-years">4 Years (Standard)</SelectItem>
-                    <SelectItem value="5-years">5+ Years (Extended)</SelectItem>
+                    <SelectItem value="3_years">3 Years (Accelerated)</SelectItem>
+                    <SelectItem value="4_years">4 Years (Standard)</SelectItem>
+                    <SelectItem value="5_years">5+ Years (Extended)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -156,30 +184,112 @@ const MultiStepForm = ({ onComplete }: MultiStepFormProps) => {
         return (
           <div className="space-y-6 animate-fade-in">
             <div className="text-center">
-              <Clock className="mx-auto h-12 w-12 text-primary mb-4" />
-              <h3 className="text-2xl font-semibold mb-2">Schedule Preferences</h3>
-              <p className="text-muted-foreground">How do you prefer to structure your time?</p>
+              <Award className="mx-auto h-12 w-12 text-primary mb-4" />
+              <h3 className="text-2xl font-semibold mb-2">AP Credits</h3>
+              <p className="text-muted-foreground">Add your AP exam scores to get credit for completed courses</p>
             </div>
             
             <div className="space-y-4">
-              <div>
-                <Label>Course Load Preference</Label>
-                <Select value={formData.workloadPreference} onValueChange={(value) => updateFormData("workloadPreference", value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="How many courses per term?" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="light">Light (3 courses)</SelectItem>
-                    <SelectItem value="normal">Normal (4 courses)</SelectItem>
-                    <SelectItem value="heavy">Heavy (5+ courses)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              {formData.apScores.map((ap, index) => (
+                <Card key={index} className="p-4">
+                  <div className="flex items-center gap-4">
+                    <div className="flex-1">
+                      <Label>AP Course</Label>
+                      <Select 
+                        value={ap.course} 
+                        onValueChange={(value) => updateAPScore(index, 'course', value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select AP course" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Array.from(new Set(apCourseConversions.map(ap => ap.apCourse))).map(course => (
+                            <SelectItem key={course} value={course}>{course}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="w-24">
+                      <Label>Score</Label>
+                      <Select 
+                        value={ap.score.toString()} 
+                        onValueChange={(value) => updateAPScore(index, 'score', parseInt(value))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="3">3</SelectItem>
+                          <SelectItem value="4">4</SelectItem>
+                          <SelectItem value="5">5</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => removeAPScore(index)}
+                      className="mt-6"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </Card>
+              ))}
+              
+              <Button 
+                variant="outline" 
+                onClick={addAPScore}
+                className="w-full"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add AP Score
+              </Button>
+              
+              {formData.apScores.length > 0 && (
+                <Card className="p-4 bg-blue-50 border-blue-200">
+                  <h4 className="font-semibold mb-2">AP Credit Summary</h4>
+                  {(() => {
+                    const conversions = getAPConversions(formData.apScores);
+                    const totalCredits = conversions.reduce((sum, ap) => sum + ap.credits, 0);
+                    const equivalentCourses = conversions.flatMap(ap => ap.uclaEquivalent);
+                    
+                    return (
+                      <div className="space-y-2 text-sm">
+                        <p><strong>Total Credits:</strong> {totalCredits}</p>
+                        <p><strong>Equivalent Courses:</strong> {equivalentCourses.join(", ") || "None"}</p>
+                        {formData.major === "Computer Science" && (
+                          <p><strong>Recommended First Courses:</strong> {getRecommendedFirstCourses(conversions, formData.major).join(", ")}</p>
+                        )}
+                      </div>
+                    );
+                  })()}
+                </Card>
+              )}
             </div>
           </div>
         );
 
       case 4:
+        return (
+          <div className="space-y-6 animate-fade-in">
+            <div className="text-center">
+              <BookOpen className="mx-auto h-12 w-12 text-primary mb-4" />
+              <h3 className="text-2xl font-semibold mb-2">Course History</h3>
+              <p className="text-muted-foreground">Select additional courses you have completed</p>
+            </div>
+            
+            {formData.major && (
+              <CourseSelector
+                major={formData.major}
+                completedCourses={formData.completedCourses}
+                onCoursesUpdate={(courses) => updateFormData("completedCourses", courses)}
+              />
+            )}
+          </div>
+        );
+
+      case 5:
         return (
           <div className="space-y-6 animate-fade-in">
             <div className="text-center">
@@ -207,6 +317,14 @@ const MultiStepForm = ({ onComplete }: MultiStepFormProps) => {
                   <span className="text-muted-foreground">Focus:</span>
                   <Badge variant="secondary" className="ml-2">{formData.focusArea}</Badge>
                 </div>
+              </div>
+              <div className="mt-4">
+                <span className="text-muted-foreground">AP Credits:</span>
+                <Badge variant="outline" className="ml-2">{formData.apScores.length} exams</Badge>
+              </div>
+              <div>
+                <span className="text-muted-foreground">Completed Courses:</span>
+                <Badge variant="outline" className="ml-2">{formData.completedCourses.length} courses</Badge>
               </div>
             </div>
           </div>

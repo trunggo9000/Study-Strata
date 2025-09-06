@@ -1,0 +1,303 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  password  String
+  role      Role     @default(STUDENT)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Student profile
+  studentProfile StudentProfile?
+  
+  // Academic plans
+  academicPlans AcademicPlan[]
+  
+  // Saved schedules
+  savedSchedules SavedSchedule[]
+
+  @@map("users")
+}
+
+model StudentProfile {
+  id       String @id @default(cuid())
+  userId   String @unique
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Academic info
+  major           String
+  year            Int
+  currentGPA      Float?
+  expectedGraduation String?
+  
+  // Preferences
+  maxUnitsPerQuarter    Int     @default(20)
+  preferredDifficulty   Difficulty @default(MIXED)
+  avoidEarlyClasses     Boolean @default(false)
+  avoidLateClasses      Boolean @default(false)
+  studyStyle           StudyStyle @default(BALANCED)
+  
+  // Interests and goals
+  interests     String[]
+  careerGoals   String[]
+  
+  // Current quarter
+  currentQuarter Json
+  
+  // Completed courses
+  completedCourses CompletedCourse[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("student_profiles")
+}
+
+model Course {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  name        String
+  credits     Int
+  difficulty  Difficulty
+  type        CourseType
+  description String?
+  
+  // Prerequisites
+  prerequisites String[]
+  
+  // Offering info
+  quarters    Quarter[]
+  majors      String[]
+  
+  // Instructor and grading
+  defaultInstructor String?
+  averageGPA       Float?
+  
+  // Sections
+  sections CourseSections[]
+  
+  // Relations
+  completedCourses CompletedCourse[]
+  scheduledCourses ScheduledCourse[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("courses")
+}
+
+model CourseSections {
+  id         String @id @default(cuid())
+  courseId   String
+  course     Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  
+  sectionType SectionType
+  instructor  String
+  days        String[]
+  startTime   String
+  endTime     String
+  location    String
+  capacity    Int
+  enrolled    Int      @default(0)
+  
+  quarter     String
+  year        Int
+
+  @@map("course_sections")
+}
+
+model CompletedCourse {
+  id        String @id @default(cuid())
+  
+  studentId String
+  student   StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  
+  courseId  String
+  course    Course @relation(fields: [courseId], references: [id])
+  
+  grade     Float?
+  quarter   String
+  year      Int
+  units     Int
+  
+  completedAt DateTime @default(now())
+
+  @@unique([studentId, courseId])
+  @@map("completed_courses")
+}
+
+model AcademicPlan {
+  id        String @id @default(cuid())
+  
+  userId    String
+  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  name      String
+  major     String
+  isActive  Boolean @default(true)
+  
+  // Plan data
+  quarters  Json // Array of QuarterPlan objects
+  
+  // Metadata
+  graduationDate    String?
+  totalUnits       Int?
+  projectedGPA     Float?
+  completionRate   Float?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("academic_plans")
+}
+
+model SavedSchedule {
+  id        String @id @default(cuid())
+  
+  userId    String
+  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  name      String
+  quarter   String
+  year      Int
+  isActive  Boolean @default(false)
+  
+  // Schedule data
+  courses   ScheduledCourse[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("saved_schedules")
+}
+
+model ScheduledCourse {
+  id         String @id @default(cuid())
+  
+  scheduleId String
+  schedule   SavedSchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  
+  courseId   String
+  course     Course @relation(fields: [courseId], references: [id])
+  
+  // Time slot info
+  days       String[]
+  startTime  String
+  endTime    String
+  location   String
+  instructor String
+  
+  // Status
+  status     CourseStatus @default(PLANNED)
+
+  @@map("scheduled_courses")
+}
+
+model Major {
+  id          String @id @default(cuid())
+  code        String @unique
+  name        String
+  school      String
+  degreeType  String
+  
+  // Requirements
+  requiredCourses  String[]
+  electiveCourses  String[]
+  geRequirements   String[]
+  
+  totalUnits       Int
+  typicalDuration  Int // in quarters
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("majors")
+}
+
+model AdvisorSession {
+  id        String @id @default(cuid())
+  
+  userId    String
+  
+  // Query info
+  question  String
+  type      QueryType
+  context   Json?
+  
+  // Response
+  answer    String
+  confidence Float
+  suggestions String[]
+  
+  createdAt DateTime @default(now())
+
+  @@map("advisor_sessions")
+}
+
+// Enums
+enum Role {
+  STUDENT
+  ADVISOR
+  ADMIN
+}
+
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+  MIXED
+}
+
+enum CourseType {
+  CORE
+  ELECTIVE
+  GE
+  MATH
+  SCIENCE
+}
+
+enum StudyStyle {
+  INTENSIVE
+  BALANCED
+  LIGHT
+}
+
+enum Quarter {
+  FALL
+  WINTER
+  SPRING
+  SUMMER
+}
+
+enum SectionType {
+  LECTURE
+  DISCUSSION
+  LAB
+}
+
+enum CourseStatus {
+  PLANNED
+  ENROLLED
+  COMPLETED
+  DROPPED
+}
+
+enum QueryType {
+  WHAT_IF
+  COURSE_RECOMMENDATION
+  SCHEDULE_OPTIMIZATION
+  CAREER_GUIDANCE
+  GENERAL
+}

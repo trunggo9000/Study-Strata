@@ -5,7 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import MultiStepForm from "@/components/MultiStepForm";
 import ScheduleGrid from "@/components/ScheduleGrid";
+import ScheduleOptimizer from "@/components/ScheduleOptimizer";
 import AdvisorChat from "@/components/AdvisorChat";
+import { sampleCurrentSchedule } from "@/data/courseData";
 import { 
   CalendarDays, 
   BookOpen, 
@@ -17,7 +19,7 @@ import {
   AlertCircle
 } from "lucide-react";
 
-interface FormData {
+interface DashboardFormData {
   major: string;
   year: string;
   graduationTimeline: string;
@@ -28,9 +30,54 @@ interface FormData {
 
 const Dashboard = () => {
   const [isSetupComplete, setIsSetupComplete] = useState(false);
-  const [userProfile, setUserProfile] = useState<FormData | null>(null);
+  const [userProfile, setUserProfile] = useState<DashboardFormData | null>(null);
+  const [currentSchedule, setCurrentSchedule] = useState(sampleCurrentSchedule);
+  const [scheduleDays, setScheduleDays] = useState(5);
 
-  const handleSetupComplete = (data: FormData) => {
+  // Calculate dynamic stats based on user profile
+  const getStatsForYear = (year: string) => {
+    switch (year?.toLowerCase()) {
+      case 'freshman':
+        return {
+          completedCourses: 0,
+          currentGPA: 'N/A',
+          creditsRemaining: 180,
+          timeToGraduate: '4yr'
+        };
+      case 'sophomore':
+        return {
+          completedCourses: 12,
+          currentGPA: '3.4',
+          creditsRemaining: 132,
+          timeToGraduate: '3yr'
+        };
+      case 'junior':
+        return {
+          completedCourses: 24,
+          currentGPA: '3.6',
+          creditsRemaining: 84,
+          timeToGraduate: '2yr'
+        };
+      case 'senior':
+        return {
+          completedCourses: 36,
+          currentGPA: '3.7',
+          creditsRemaining: 36,
+          timeToGraduate: '1yr'
+        };
+      default:
+        return {
+          completedCourses: 0,
+          currentGPA: 'N/A',
+          creditsRemaining: 180,
+          timeToGraduate: '4yr'
+        };
+    }
+  };
+
+  const stats = getStatsForYear(userProfile?.year || 'freshman');
+
+  const handleSetupComplete = (data: any) => {
     setUserProfile(data);
     setIsSetupComplete(true);
   };
@@ -74,7 +121,7 @@ const Dashboard = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Completed Courses</p>
-                  <p className="text-3xl font-bold text-primary">32</p>
+                  <p className="text-3xl font-bold text-primary">{stats.completedCourses}</p>
                 </div>
                 <CheckCircle className="h-10 w-10 text-success" />
               </div>
@@ -86,7 +133,7 @@ const Dashboard = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Current GPA</p>
-                  <p className="text-3xl font-bold text-primary">3.7</p>
+                  <p className="text-3xl font-bold text-primary">{stats.currentGPA}</p>
                 </div>
                 <TrendingUp className="h-10 w-10 text-success" />
               </div>
@@ -98,7 +145,7 @@ const Dashboard = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Credits Remaining</p>
-                  <p className="text-3xl font-bold text-primary">48</p>
+                  <p className="text-3xl font-bold text-primary">{stats.creditsRemaining}</p>
                 </div>
                 <Target className="h-10 w-10 text-warning" />
               </div>
@@ -110,7 +157,7 @@ const Dashboard = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Time to Graduate</p>
-                  <p className="text-3xl font-bold text-primary">2.5yr</p>
+                  <p className="text-3xl font-bold text-primary">{stats.timeToGraduate}</p>
                 </div>
                 <Clock className="h-10 w-10 text-primary" />
               </div>
@@ -139,7 +186,16 @@ const Dashboard = () => {
               </TabsList>
               
               <TabsContent value="schedule" className="space-y-6">
-                <ScheduleGrid courses={[]} />
+                <ScheduleOptimizer 
+                  currentSchedule={currentSchedule}
+                  onScheduleUpdate={setCurrentSchedule}
+                  scheduleDays={scheduleDays}
+                  onScheduleDaysChange={setScheduleDays}
+                />
+                <ScheduleGrid 
+                  courses={currentSchedule} 
+                  scheduleDays={scheduleDays}
+                />
               </TabsContent>
               
               <TabsContent value="roadmap" className="space-y-6">

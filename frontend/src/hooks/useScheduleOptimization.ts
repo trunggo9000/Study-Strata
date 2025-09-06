@@ -239,6 +239,10 @@ export const useScheduleOptimization = (): UseScheduleOptimizationReturn => {
     const numYears = constraints.graduationTimeline === '3_years' ? 3 : 
                     constraints.graduationTimeline === '4_years' ? 4 : 5;
     
+    // Determine minimum courses per quarter for accelerated track
+    const isAccelerated = constraints.graduationTimeline === '3_years';
+    const minCoursesPerQuarter = isAccelerated ? 4 : 3;
+    
     for (let year = 0; year < numYears; year++) {
       for (const season of ['Fall', 'Winter', 'Spring']) {
         if (!constraints.preferredQuarters.includes(season) && season === 'Winter') continue;
@@ -253,7 +257,7 @@ export const useScheduleOptimization = (): UseScheduleOptimizationReturn => {
           score: 0
         };
 
-        // Select courses for this quarter using greedy algorithm
+        // Select courses for this quarter using intelligent algorithm
         const eligibleCourses = availableCourses.filter(course => {
           // Check prerequisites
           const prereqsSatisfied = course.prerequisites.every(prereq => 
@@ -266,45 +270,101 @@ export const useScheduleOptimization = (): UseScheduleOptimizationReturn => {
           return prereqsSatisfied && offeredThisQuarter;
         });
 
-        // Sort by priority (difficulty, tags, etc.)
+        // Enhanced sorting based on course priority and performance prediction
         eligibleCourses.sort((a, b) => {
-          const aPriority = constraints.priorityTags.some(tag => a.tags.includes(tag)) ? 1 : 0;
-          const bPriority = constraints.priorityTags.some(tag => b.tags.includes(tag)) ? 1 : 0;
-          
-          if (aPriority !== bPriority) return bPriority - aPriority;
-          return a.difficulty - b.difficulty; // Prefer easier courses first
+          let scoreA = 0;
+          let scoreB = 0;
+
+          // Priority by course type (core > math/science > electives > GE)
+          const typeScores = { 'core': 100, 'math': 80, 'science': 80, 'elective': 60, 'ge': 40 };
+          scoreA += typeScores[a.tags?.[0] as keyof typeof typeScores] || 0;
+          scoreB += typeScores[b.tags?.[0] as keyof typeof typeScores] || 0;
+
+          // Priority tags bonus
+          const aPriority = constraints.priorityTags.some(tag => a.tags?.includes(tag)) ? 20 : 0;
+          const bPriority = constraints.priorityTags.some(tag => b.tags?.includes(tag)) ? 20 : 0;
+          scoreA += aPriority;
+          scoreB += bPriority;
+
+          // Prerequisites unlock potential
+          const aUnlocks = availableCourses.filter(c => c.prerequisites.includes(a.id)).length;
+          const bUnlocks = availableCourses.filter(c => c.prerequisites.includes(b.id)).length;
+          scoreA += aUnlocks * 10;
+          scoreB += bUnlocks * 10;
+
+          // Difficulty balancing (prefer easier courses when quarter is already difficult)
+          const currentDifficulty = quarter.courses.reduce((sum, c) => sum + c.difficulty, 0) / Math.max(1, quarter.courses.length);
+          if (currentDifficulty >= 3.5) {
+            scoreA += a.difficulty <= 2 ? 15 : -10;
+            scoreB += b.difficulty <= 2 ? 15 : -10;
+          }
+
+          return scoreB - scoreA;
         });
 
-        // Add courses to quarter
+        // Add courses to quarter with enhanced logic
         let currentUnits = 0;
         let currentDifficulty = 0;
+        let coursesAdded = 0;
         
         for (const course of eligibleCourses) {
           const newUnits = currentUnits + course.units;
           const newDifficulty = quarter.courses.length === 0 ? course.difficulty :
             (currentDifficulty * quarter.courses.length + course.difficulty) / (quarter.courses.length + 1);
 
-          if (newUnits <= constraints.maxUnitsPerQuarter && 
-              newDifficulty <= constraints.maxDifficultyPerQuarter) {
+          // Check constraints
+          const exceedsUnits = newUnits > constraints.maxUnitsPerQuarter;
+          const exceedsDifficulty = newDifficulty > constraints.maxDifficultyPerQuarter;
+          
+          // For accelerated track, allow slight constraint flexibility to meet minimum courses
+          const canAddForAccelerated = isAccelerated && coursesAdded < minCoursesPerQuarter && 
+                                      newUnits <= constraints.maxUnitsPerQuarter + 2;
+
+          if (!exceedsUnits && !exceedsDifficulty) {
             quarter.courses.push(course);
             currentUnits = newUnits;
             currentDifficulty = newDifficulty;
+            coursesAdded++;
             
             // Remove from available courses
             const courseIndex = availableCourses.findIndex(c => c.id === course.id);
             if (courseIndex !== -1) {
               availableCourses.splice(courseIndex, 1);
             }
+          } else if (canAddForAccelerated && !exceedsDifficulty) {
+            // Add course for accelerated track even if slightly over unit limit
+            quarter.courses.push(course);
+            currentUnits = newUnits;
+            currentDifficulty = newDifficulty;
+            coursesAdded++;
+            
+            const courseIndex = availableCourses.findIndex(c => c.id === course.id);
+            if (courseIndex !== -1) {
+              availableCourses.splice(courseIndex, 1);
+            }
           }
 
-          if (currentUnits >= constraints.minUnitsPerQuarter && quarter.courses.length >= 3) {
-            break; // Sufficient courses for this quarter
+          // Stop conditions
+          const hasMinimumCourses = coursesAdded >= minCoursesPerQuarter;
+          const hasMinimumUnits = currentUnits >= constraints.minUnitsPerQuarter;
+          const hasReasonableLoad = coursesAdded >= 5; // Maximum reasonable course load
+          
+          if (hasMinimumCourses && hasMinimumUnits && !isAccelerated) {
+            break;
+          }
+          if (hasReasonableLoad) {
+            break;
           }
         }
 
         quarter.totalUnits = currentUnits;
         quarter.averageDifficulty = currentDifficulty;
         quarter.score = calculateQuarterScore(quarter, constraints);
+
+        // Add conflicts for accelerated track validation
+        if (isAccelerated && coursesAdded < minCoursesPerQuarter && coursesAdded > 0) {
+          quarter.conflicts.push(`Accelerated track requires minimum ${minCoursesPerQuarter} courses, only ${coursesAdded} scheduled`);
+        }
 
         // Add completed courses
         quarter.courses.forEach(course => {

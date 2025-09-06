@@ -13,19 +13,20 @@ interface Course {
   days: string[];
   credits: number;
   difficulty: "easy" | "medium" | "hard";
-  type: "core" | "elective" | "ge";
+  type: "core" | "elective" | "ge" | "math" | "science";
 }
 
 interface ScheduleGridProps {
   courses: Course[];
   title?: string;
+  scheduleDays?: number;
 }
 
 const mockCourses: Course[] = [
   {
     id: "1",
-    code: "CS33",
-    name: "Introduction to Computer Organization",
+    code: "CS31",
+    name: "Introduction to Computer Science I",
     instructor: "Dr. Smith",
     location: "Boelter 5420",
     startTime: "09:00",
@@ -37,16 +38,16 @@ const mockCourses: Course[] = [
   },
   {
     id: "2", 
-    code: "MATH33A",
-    name: "Linear Algebra and Applications",
+    code: "MATH31A",
+    name: "Differential and Integral Calculus",
     instructor: "Prof. Johnson",
     location: "MS 6221",
     startTime: "11:00",
     endTime: "12:50",
     days: ["T", "R"],
     credits: 4,
-    difficulty: "hard",
-    type: "core"
+    difficulty: "medium",
+    type: "math"
   },
   {
     id: "3",
@@ -63,8 +64,8 @@ const mockCourses: Course[] = [
   },
   {
     id: "4",
-    code: "PHILOS7",
-    name: "Introduction to Philosophy",
+    code: "LIFESCI7A",
+    name: "Cell and Molecular Biology",
     instructor: "Prof. Davis",
     location: "Dodd 154",
     startTime: "16:00",
@@ -72,7 +73,7 @@ const mockCourses: Course[] = [
     days: ["T", "R"],
     credits: 4,
     difficulty: "medium",
-    type: "ge"
+    type: "science"
   }
 ];
 
@@ -98,119 +99,99 @@ const getTypeColor = (type: string) => {
     case "core": return "bg-primary text-primary-foreground";
     case "elective": return "bg-secondary text-secondary-foreground";
     case "ge": return "bg-accent text-accent-foreground";
+    case "math": return "bg-indigo-500 text-white";
+    case "science": return "bg-teal-500 text-white";
     default: return "bg-muted";
   }
 };
 
-const ScheduleGrid = ({ courses = mockCourses, title = "Weekly Schedule" }: ScheduleGridProps) => {
+const ScheduleGrid = ({ courses = mockCourses, title = "Weekly Schedule", scheduleDays = 5 }: ScheduleGridProps) => {
   const getCoursesForSlot = (day: string, time: string) => {
     return courses.filter(course => {
       if (!course.days.includes(day)) return false;
       
-      const courseStart = parseInt(course.startTime.replace(":", ""));
-      const courseEnd = parseInt(course.endTime.replace(":", ""));
-      const slotTime = parseInt(time.replace(":", ""));
-      
-      return slotTime >= courseStart && slotTime < courseEnd;
+      const start = parseInt(time.replace(":", ""));
+      const end = parseInt(course.startTime.replace(":", ""));
+      return start === end;
     });
   };
 
+  const getDurationInSlots = (startTime: string, endTime: string) => {
+    const start = parseInt(startTime.replace(":", ""));
+    const end = parseInt(endTime.replace(":", ""));
+    return Math.ceil((end - start) / 100);
+  };
+
+  const displayWeekdays = weekdays.slice(0, scheduleDays);
+  const displayDayAbbr = dayAbbr.slice(0, scheduleDays);
+
   return (
-    <Card className="w-full shadow-card">
-      <CardHeader className="bg-gradient-subtle">
+    <Card className="w-full">
+      <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Clock className="h-5 w-5" />
           {title}
         </CardTitle>
       </CardHeader>
-      
-      <CardContent className="p-6">
-        <div className="grid grid-cols-6 gap-2 text-sm">
-          {/* Header row */}
-          <div className="p-3 font-semibold text-center">Time</div>
-          {weekdays.map((day, index) => (
-            <div key={day} className="p-3 font-semibold text-center bg-muted rounded">
-              {day}
-              <br />
-              <span className="text-xs text-muted-foreground">{dayAbbr[index]}</span>
-            </div>
-          ))}
-          
-          {/* Time slots */}
-          {timeSlots.map(time => (
-            <div key={time} className="contents">
-              <div className="p-3 text-center font-medium bg-muted/50 rounded">
-                {time}
+      <CardContent>
+        <div className="overflow-x-auto">
+          <div className={`grid gap-1 min-w-[800px]`} style={{ gridTemplateColumns: `120px repeat(${scheduleDays}, 1fr)` }}>
+            {/* Header row */}
+            <div className="p-2 font-semibold text-center border-b">Time</div>
+            {displayWeekdays.map((day, index) => (
+              <div key={day} className="p-2 font-semibold text-center border-b">
+                {day}
+                <div className="text-xs text-muted-foreground mt-1">{displayDayAbbr[index]}</div>
               </div>
-              
-              {dayAbbr.map(day => {
-                const coursesInSlot = getCoursesForSlot(day, time);
-                
-                return (
-                  <div key={`${day}-${time}`} className="p-1 border border-border/50 min-h-[60px] relative">
-                    {coursesInSlot.map(course => (
-                      <div
-                        key={course.id}
-                        className="bg-gradient-primary text-primary-foreground p-2 rounded text-xs shadow-course mb-1 animate-bounce-in"
-                      >
-                        <div className="font-semibold">{course.code}</div>
-                        <div className="truncate">{course.name}</div>
-                        <div className="flex items-center gap-1 mt-1 text-xs opacity-90">
-                          <MapPin className="h-3 w-3" />
-                          <span className="truncate">{course.location}</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                );
-              })}
-            </div>
-          ))}
-        </div>
-        
-        {/* Course details */}
-        <div className="mt-8 space-y-4">
-          <h4 className="font-semibold text-lg">Course Details</h4>
-          <div className="grid gap-4 md:grid-cols-2">
-            {courses.map(course => (
-              <Card key={course.id} className="shadow-course hover:shadow-elevated transition-all duration-300">
-                <CardContent className="p-4">
-                  <div className="flex items-start justify-between mb-3">
-                    <div>
-                      <h5 className="font-semibold text-lg">{course.code}</h5>
-                      <p className="text-sm text-muted-foreground">{course.name}</p>
+            ))}
+            
+            {/* Time slots */}
+            {timeSlots.map(time => (
+              <div key={time} className="contents">
+                <div className="p-2 text-sm font-medium text-center border-r bg-muted/30">
+                  {time}
+                </div>
+                {displayDayAbbr.map(day => {
+                  const coursesInSlot = getCoursesForSlot(day, time);
+                  return (
+                    <div key={`${day}-${time}`} className="p-1 border-r border-b min-h-[60px] relative">
+                      {coursesInSlot.map(course => {
+                        const duration = getDurationInSlots(course.startTime, course.endTime);
+                        return (
+                          <div
+                            key={course.id}
+                            className="absolute inset-1 rounded-md p-2 text-xs overflow-hidden shadow-sm"
+                            style={{
+                              height: `${duration * 60 - 8}px`,
+                              backgroundColor: 'var(--primary)',
+                              color: 'var(--primary-foreground)'
+                            }}
+                          >
+                            <div className="font-semibold text-xs mb-1">{course.code}</div>
+                            <div className="text-xs opacity-90 mb-1 line-clamp-2">{course.name}</div>
+                            <div className="flex items-center gap-1 text-xs opacity-75">
+                              <User className="h-3 w-3" />
+                              <span className="truncate">{course.instructor}</span>
+                            </div>
+                            <div className="flex items-center gap-1 text-xs opacity-75 mt-1">
+                              <MapPin className="h-3 w-3" />
+                              <span className="truncate">{course.location}</span>
+                            </div>
+                            <div className="flex gap-1 mt-1">
+                              <Badge className={`text-xs px-1 py-0 ${getDifficultyColor(course.difficulty)}`}>
+                                {course.difficulty}
+                              </Badge>
+                              <Badge className={`text-xs px-1 py-0 ${getTypeColor(course.type)}`}>
+                                {course.type}
+                              </Badge>
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
-                    <div className="flex gap-1">
-                      <Badge className={getDifficultyColor(course.difficulty)} variant="secondary">
-                        {course.difficulty}
-                      </Badge>
-                      <Badge className={getTypeColor(course.type)} variant="secondary">
-                        {course.type}
-                      </Badge>
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-2 text-sm">
-                    <div className="flex items-center gap-2">
-                      <User className="h-4 w-4 text-muted-foreground" />
-                      <span>{course.instructor}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <MapPin className="h-4 w-4 text-muted-foreground" />
-                      <span>{course.location}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4 text-muted-foreground" />
-                      <span>
-                        {course.days.join(", ")} • {course.startTime} - {course.endTime}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">{course.credits} credits</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  );
+                })}
+              </div>
             ))}
           </div>
         </div>
