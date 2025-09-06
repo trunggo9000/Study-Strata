@@ -175,43 +175,6 @@ Authorization: Bearer <jwt_token>
 }
 ```
 
-## 🎯 Core Features Deep Dive
-
-### 🤖 AI Scheduling Engine
-- **Multi-Quarter Planning**: Optimizes course sequences across 4+ years
-- **Weighted Scoring**: Considers prerequisites, workload, GPA impact, graduation progress
-- **Conflict Resolution**: Automatically detects and resolves time/prerequisite conflicts
-- **Performance**: Generates optimal schedules in <2 seconds
-
-### 💬 Natural Language Advisor
-- **GPT-4 Integration**: Contextual academic advice and course recommendations
-- **What-If Analysis**: Scenario modeling for major changes, study load adjustments
-- **Career Guidance**: Personalized career path recommendations
-- **Performance Analytics**: GPA trends and improvement suggestions
-
-### 📊 Interactive Roadmap
-- **Timeline View**: Visual course progression with milestones
-- **Grid Layout**: Quarter-by-quarter course overview
-- **Progress Tracking**: Real-time graduation progress and GPA projection
-- **Export Options**: PDF/CSV export for academic advisors
-
-## 🔒 Security Features
-
-- **JWT Authentication** with secure token rotation
-- **Password Hashing** using bcrypt with salt rounds
-- **Rate Limiting** to prevent API abuse
-- **Input Validation** with express-validator
-- **CORS Protection** for cross-origin requests
-- **Helmet.js** for security headers
-
-## 📊 Performance Metrics
-
-- **Frontend**: Lighthouse score 95+
-- **Backend**: <100ms average response time
-- **Database**: Optimized queries with indexing
-- **Caching**: Redis for frequently accessed data
-- **Monitoring**: Real-time metrics with Prometheus/Grafana
-
 ## 🚀 Deployment
 
 ### Docker Deployment
@@ -245,50 +208,6 @@ npm run deploy:production
 - Maintain 90%+ test coverage
 - Use conventional commits
 - Update documentation for new features
-
-## 📈 Roadmap
-
-### Phase 1: MVP ✅
-- [x] Core scheduling engine
-- [x] Basic UI components
-- [x] Authentication system
-- [x] Database schema
-
-### Phase 2: Enhanced Features ✅
-- [x] AI advisor integration
-- [x] Multi-quarter planning
-- [x] Interactive roadmap
-- [x] Comprehensive testing
-
-### Phase 3: Production Ready ✅
-- [x] Docker containerization
-- [x] CI/CD pipeline
-- [x] Monitoring & logging
-- [x] Security hardening
-
-### Phase 4: Advanced Features 🚧
-- [ ] Mobile app (React Native)
-- [ ] Real-time collaboration
-- [ ] Advanced analytics dashboard
-- [ ] Integration with UCLA systems
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🙏 Acknowledgments
-
-- UCLA Computer Science Department for course data
-- OpenAI for GPT-4 API access
-- shadcn/ui for beautiful UI components
-- The open-source community for amazing tools
-
-## 📞 Support
-
-- 📧 Email: support@studystrata.com
-- 💬 Discord: [Study Strata Community](https://discord.gg/studystrata)
-- 📖 Documentation: [docs.studystrata.com](https://docs.studystrata.com)
-- 🐛 Issues: [GitHub Issues](https://github.com/trunggo9000/study-strata/issues)
 
 ---
 
