@@ -1,133 +1,117 @@
-# 🎓 Study Strata - FAANG-Level Academic Planning Platform
+# Study Strata
 
-> **Intelligent multi-quarter scheduling with AI-powered academic advising for UCLA students**
+> AI-Powered Academic Planning Platform
 
-[![CI/CD Pipeline](https://github.com/your-org/study-strata/workflows/CI/CD%20Pipeline/badge.svg)](https://github.com/your-org/study-strata/actions)
-[![Coverage](https://codecov.io/gh/your-org/study-strata/branch/main/graph/badge.svg)](https://codecov.io/gh/your-org/study-strata)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-
-## 🚀 Overview
-
-Study Strata is a production-ready academic planning platform that leverages AI and advanced algorithms to optimize student course scheduling across multiple quarters. Built with enterprise-grade architecture and FAANG-level engineering practices.
-
-### 🎯 Key Features
-
-- **🤖 AI Scheduling Engine**: Multi-quarter optimization using weighted scoring algorithms
-- **💬 Natural Language Advisor**: GPT-4 powered academic guidance and what-if analysis
-- **📊 Interactive Roadmap**: Multi-year visualization with timeline and milestone tracking
-- **🔐 Secure Authentication**: JWT-based auth with bcrypt password hashing
-- **📱 Responsive UI**: Modern React interface with Tailwind CSS and shadcn/ui
-- **🧪 Comprehensive Testing**: 95%+ code coverage with unit, integration, and E2E tests
-- **🐳 Production Ready**: Dockerized deployment with CI/CD pipeline
-
-## 🏗️ Architecture
-
-```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Frontend      │    │   Backend API   │    │   Database      │
-│   React + TS    │◄──►│   Node.js       │◄──►│   PostgreSQL    │
-│   Tailwind CSS  │    │   Express       │    │   Prisma ORM    │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-         │                       │                       │
-         │              ┌─────────────────┐              │
-         └──────────────►│   AI Services   │◄─────────────┘
-                        │   OpenAI GPT-4  │
-                        │   Scheduling AI │
-                        └─────────────────┘
-```
-
-## 🛠️ Tech Stack
-
-### Frontend
-- **React 18** with TypeScript
-- **Vite** for blazing fast development
-- **Tailwind CSS** + **shadcn/ui** for modern UI
-- **React Query** for state management
-- **React Router** for navigation
-
-### Backend
-- **Node.js** + **Express** + **TypeScript**
-- **Prisma ORM** with PostgreSQL
-- **JWT Authentication** with bcrypt
-- **OpenAI GPT-4** integration
-- **Redis** for caching
-
-### DevOps & Infrastructure
-- **Docker** + **Docker Compose**
-- **GitHub Actions** CI/CD
-- **AWS ECS** deployment
-- **Prometheus** + **Grafana** monitoring
-- **Jest** + **Playwright** testing
-
-## 🚀 Quick Start
-
-### Prerequisites
-- Node.js 18+
-- Docker & Docker Compose
-- PostgreSQL 15+
-
-### Development Setup
-
-```bash
-# Clone repository
-git clone https://github.com/trunggo9000/study-strata.git
-cd study-strata
-
-# Install dependencies
-npm install
-
-# Setup environment variables
-cp .env.example .env
-# Edit .env with your configuration
-
-# Start development environment
-docker-compose up -d postgres redis
-cd backend && npm run dev &
-cd frontend && npm run dev
-```
-
-### Production Deployment
-
-```bash
-# Build and deploy with Docker
-docker-compose up -d
-
-# Or deploy to AWS ECS
-npm run deploy:aws
-```
-
-## 📁 Project Structure
+## Project Structure
 
 ```
 study-strata/
-├── frontend/                 # React frontend application
-│   ├── src/
-│   │   ├── components/      # Reusable UI components
-│   │   ├── pages/          # Page components
-│   │   ├── hooks/          # Custom React hooks
-│   │   ├── utils/          # Utility functions
-│   │   └── data/           # Static data and types
-│   └── public/             # Static assets
-├── backend/                 # Node.js backend API
-│   ├── src/
-│   │   ├── routes/         # API route handlers
-│   │   ├── services/       # Business logic services
-│   │   ├── ai/             # AI integration modules
-│   │   ├── middleware/     # Express middleware
-│   │   ├── controllers/    # Request controllers
-│   │   └── types/          # TypeScript type definitions
-│   └── prisma/             # Database schema and migrations
-├── database/               # Database configuration
-├── tests/                  # Test suites
-│   ├── backend/           # Backend unit tests
-│   ├── frontend/          # Frontend component tests
-│   └── integration/       # E2E integration tests
-├── .github/workflows/      # CI/CD pipeline configuration
-├── monitoring/            # Prometheus & Grafana config
-└── docs/                  # Documentation
+├── frontend/          # React + Vite frontend
+│   ├── src/           # React source code
+│   └── public/        # Static assets
+├── backend/           # Python/Node.js backend
+│   ├── src/           # API source code
+│   └── prisma/        # Database schema
+├── docker/            # Docker configuration
+│   ├── backend/       # Backend Dockerfile
+│   ├── frontend/      # Frontend Dockerfile
+│   └── nginx/         # Web server config
+└── tests/             # Test suites
 ```
 
-## 🧪 Testing
+## Local Development
+
+### Frontend (React + Vite)
+
+**Requirements:**
+- Node.js 18+
+- npm 9+
+
+**Setup:**
+```bash
+# Install dependencies
+npm install
+
+# Start development server
+npm run dev
+
+# Open in browser
+# http://localhost:3000
+```
+
+### Backend (Python/Node.js)
+
+**Requirements:**
+- Python 3.10+
+- Node.js 18+
+- PostgreSQL
+- Redis
+
+**Setup:**
+```bash
+# Install Python dependencies
+pip install -r backend/requirements.txt
+
+# Install Node dependencies
+cd backend && npm install
+
+# Start backend server
+npm run dev
+```
+
+## Docker Development
+
+```bash
+# Start development environment
+./docker/scripts/compose.sh dev up
+
+# View logs
+./docker/scripts/compose.sh dev logs
+
+# Stop services
+./docker/scripts/compose.sh dev down
+```
+
+## Production Build
+
+```bash
+# Build frontend
+npm run build
+
+# Start production stack
+./docker/scripts/compose.sh prod up -d
+```
+
+## Tech Stack
+
+- **Frontend**: React 18, TypeScript, Tailwind CSS, Vite
+- **Backend**: Python (FastAPI), Node.js, Express
+- **AI**: OpenAI GPT-4, custom scheduling algorithms
+- **Database**: PostgreSQL, Redis
+- **Infra**: Docker, Nginx, GitHub Actions
+
+## Environment Variables
+
+Create a `.env` file in the project root:
+
+```
+# Database
+DB_USER=postgres
+DB_PASSWORD=your-password
+DB_NAME=study_strata
+
+# JWT
+JWT_SECRET=your-secret-key
+
+# OpenAI
+OPENAI_API_KEY=your-api-key
+```
+
+## Contributing
+
+1. Create a feature branch
+2. Commit your changes
+3. Open a pull request
 
 ```bash
 # Run all tests

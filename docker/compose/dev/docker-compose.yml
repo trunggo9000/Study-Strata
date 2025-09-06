@@ -1,0 +1,96 @@
+version: '3.8'
+
+services:
+  # Development database
+  postgres:
+    extends:
+      file: docker-compose.prod.yml
+      service: postgres
+    environment:
+      POSTGRES_DB: study_strata_dev
+      POSTGRES_USER: dev
+      POSTGRES_PASSWORD: devpassword
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+
+  # Development Redis
+  redis:
+    extends:
+      file: docker-compose.prod.yml
+      service: redis
+    command: redis-server --appendonly yes --requirepass devpassword
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis_dev_data:/data
+
+  # Development backend with hot-reload
+  backend:
+    build:
+      context: .
+      dockerfile: docker/backend/Dockerfile
+      target: development
+    container_name: study-strata-api-dev
+    environment:
+      - NODE_ENV=development
+      - PORT=3001
+      - DATABASE_URL=postgresql://dev:devpassword@postgres:5432/study_strata_dev
+      - REDIS_URL=redis://:devpassword@redis:6379
+      - JWT_SECRET=dev-secret-key
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-dummy-key}
+      - FRONTEND_URL=http://localhost:3000
+      - PYTHONUNBUFFERED=1
+      - PYTHONDONTWRITEBYTECODE=1
+      - PIP_NO_CACHE_DIR=1
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+      - /app/__pycache__
+    ports:
+      - "3001:3001"
+    command: >
+      sh -c "pip install --user -r requirements-dev.txt &&
+             uvicorn app.main:app --host 0.0.0.0 --port 3001 --reload"
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - study-strata-network
+
+  # Development frontend with hot-reload
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/frontend/Dockerfile
+      target: development
+    container_name: study-strata-web-dev
+    environment:
+      - NODE_ENV=development
+      - VITE_API_URL=http://localhost:3001
+      - VITE_APP_NAME="Study Strata (Dev)"
+      - VITE_APP_VERSION=dev
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    ports:
+      - "3000:3000"
+    command: >
+      sh -c "npm install && 
+             npm run dev -- --host"
+    depends_on:
+      - backend
+    networks:
+      - study-strata-network
+
+networks:
+  study-strata-network:
+    external: true
+    name: study-strata-network
+
+volumes:
+  postgres_dev_data:
+    name: study-strata-postgres-dev-data
+  redis_dev_data:
+    name: study-strata-redis-dev-data
